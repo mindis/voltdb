@@ -141,6 +141,9 @@ public class AsyncBenchmark {
         @Option(desc = "Benchmark duration, in seconds.")
         int duration = 120;
 
+        @Option(desc = "Inserts to run, not including preload and warmup. Set negative for no limit.")
+        long maxinserts = Long.MAX_VALUE;
+
         @Option(desc = "Warmup duration in seconds.")
         int warmup = 0;
 
@@ -791,17 +794,19 @@ public class AsyncBenchmark {
             // If Volt is running on one node only, no need to run this test on multi-partition
             config.multisingleratio = 0;
 
-        // Run the benchmark loop for the requested duration
+        // Run the benchmark loop for the requested duration or txn count
         // The throughput may be throttled depending on client configuration
         System.out.println("\nRunning benchmark...");
         final long benchmarkEndTime = System.currentTimeMillis() + (1000l * config.duration);
         long currentTime = System.currentTimeMillis();
+        long insertCount = 0;
         long diff = benchmarkEndTime - currentTime;
         int i = 1;
 
+
         double mpRand;
         String msg = "";
-        while (benchmarkEndTime > currentTime) {
+        while (benchmarkEndTime > currentTime && insertCount < config.maxinserts) {
             if(debug && diff != 0 && diff%5000.00 == 0 && i%5 == 0) {
                 msg = "i = " + i + ", Time remaining in seconds: " + diff/1000l +
                       ", totalConnections = " + totalConnections.get();
@@ -837,6 +842,7 @@ public class AsyncBenchmark {
             }
             else {
                 // Put a key/value pair, asynchronously
+                insertCount++;
                 final PayloadProcessor.Pair pair = processor.generateForStore();
                 mpRand = rand.nextDouble();
                 if(rand.nextDouble() < config.multisingleratio) {
