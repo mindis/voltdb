@@ -141,8 +141,8 @@ public class AsyncBenchmark {
         @Option(desc = "Benchmark duration, in seconds.")
         int duration = 120;
 
-        @Option(desc = "Inserts to run, not including preload and warmup. Set negative for no limit.")
-        long maxinserts = Long.MAX_VALUE;
+        @Option(desc = "Number of puts to run during. This does not count any preloading or warmup.")
+        long maxputs = Long.MAX_VALUE;
 
         @Option(desc = "Warmup duration in seconds.")
         int warmup = 0;
@@ -171,7 +171,6 @@ public class AsyncBenchmark {
         @Option(desc = "Fraction of ops that are gets (singlePartition vs multiPartition) " +
                 "and puts (singlePartition vs multiPartition).")
         double multisingleratio = 0; // By default, don't run multi-partition
-
 
         @Option(desc = "Size of keys in bytes.")
         int keysize = 32;
@@ -799,14 +798,13 @@ public class AsyncBenchmark {
         System.out.println("\nRunning benchmark...");
         final long benchmarkEndTime = System.currentTimeMillis() + (1000l * config.duration);
         long currentTime = System.currentTimeMillis();
-        long insertCount = 0;
         long diff = benchmarkEndTime - currentTime;
         int i = 1;
-
+        long putCount = 0;
 
         double mpRand;
         String msg = "";
-        while (benchmarkEndTime > currentTime && insertCount < config.maxinserts) {
+        while (benchmarkEndTime > currentTime && putCount < config.maxputs) {
             if(debug && diff != 0 && diff%5000.00 == 0 && i%5 == 0) {
                 msg = "i = " + i + ", Time remaining in seconds: " + diff/1000l +
                       ", totalConnections = " + totalConnections.get();
@@ -842,7 +840,7 @@ public class AsyncBenchmark {
             }
             else {
                 // Put a key/value pair, asynchronously
-                insertCount++;
+                putCount++;
                 final PayloadProcessor.Pair pair = processor.generateForStore();
                 mpRand = rand.nextDouble();
                 if(rand.nextDouble() < config.multisingleratio) {
